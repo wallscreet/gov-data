@@ -12,57 +12,209 @@ FRED_API_KEY = os.getenv("FRED_API_KEY")
 fred = Fred(api_key=FRED_API_KEY)
 
 
-def get_population():
+def _fetch_cpi(start_date:str=None, end_date:str=None):
     """
-    FRED series: Population (POPTHM)
+    Consumer Price Index for All Urban Consumers: All Items in U.S. City Average (CPIAUCSL)
+    """
+    series = fred.get_series('CPIAUCSL')
+    df = series.to_frame().reset_index()
+    df.columns = ['Date', 'CPI']
+    
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
+    df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
+    df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
+    df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
+
+    return df
+
+
+def _fetch_pce(start_date=None, end_date=None):
+    """
+    Personal Consumption Expenditures (PCE)
+    """
+    series = fred.get_series('PCE')
+    df = series.to_frame().reset_index()
+    df.columns = ['Date', 'PCE']
+    
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+
+    df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
+    df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
+    df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
+    df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
+
+    df['PCE'] = df['PCE'] * 1000000000
+
+    return df
+
+
+def _fetch_us_households(start_date=None, end_date=None):
+    """
+    Total Households (TTLHH)
+    """
+    series = fred.get_series('TTLHH')
+    df = series.to_frame().reset_index()
+    df.columns = ['Date', 'US Households']
+
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+
+    df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
+    df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
+    df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
+    df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
+    
+    df['US Households'] = (df['US Households'] * 1000)
+    
+    return df
+
+
+def _fetch_us_population(start_date=None, end_date=None):
+    """
+    Population (POPTHM)
     """
     series = fred.get_series('POPTHM')
     df = series.to_frame().reset_index()
     df.columns = ['Date', 'US Population']
-    df['Date'] = pd.to_datetime(df['Date'])
-    df.set_index('Date', inplace=True)
-    df = round(df.resample('YE').max(), 2)
-    df.index = df.index.year
-    df.reset_index(inplace=True)
-    df.columns = ['Year', 'US Population']
+
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
+    df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
+    df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
+    df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
+
     df['US Population']= df['US Population'] * 1000
 
     return df
 
 
-def get_cpi():
+def _fetch_median_family_income(start_date=None, end_date=None):
     """
-    Consumer Price Index for All Urban Consumers: All Items in U.S. City Average (CPIAUCSL)
-
+    Median Annual Family Income in the United States (MEFAINUSA646N)
     """
-    series = fred.get_series('CPIAUCSL')
+    series = fred.get_series('MEFAINUSA646N')
     df = series.to_frame().reset_index()
-    df.columns = ['Date', 'CPI']
-    df['Date'] = pd.to_datetime(df['Date'])
-    df.set_index('Date', inplace=True)
-    df = round(df.resample('YE').max(), 2)
-    df.index = df.index.year
-    df.reset_index(inplace=True)
-    df.columns = ['Year', 'CPI']
+    df.columns = ['Date', 'Median Family Income']
+    
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    df = df.set_index("Date").resample('MS').ffill().reset_index()
+    
+    df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
+    df['Year'] = df['Date'].apply(lambda x: int(x[:4]))
+    df['Month'] = df['Date'].apply(lambda x: int(x[5:7]))
+    df['Day'] = df['Date'].apply(lambda x: int(x[8:]))
 
     return df
 
 
-def get_pce():
+def _fetch_30yr_mortgage_rates(start_date=None, end_date=None):
     """
-    Personal Consumption Expenditures (PCE)
-
+    30-Year Fixed Rate Mortgage Average in the United States (MORTGAGE30US)
+    Weekly series resampled to monthly mean.
     """
-    series = fred.get_series('PCE')
+    series = fred.get_series('MORTGAGE30US')
     df = series.to_frame().reset_index()
-    df.columns = ['Date', 'PCE']
-    df['Date'] = pd.to_datetime(df['Date'])
-    df.set_index('Date', inplace=True)
-    df = round(df.resample('YE').max(), 2)
-    df.index = df.index.year
-    df.reset_index(inplace=True)
-    df.columns = ['Year', 'PCE']
-    df['PCE'] = df['PCE'] * 1000000000
+    df.columns = ['Date', '30yr Mortgage Rate']
+    
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    df = df.set_index("Date").resample('MS').mean().reset_index()
+
+    df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
+    df['Year'] = df['Date'].apply(lambda x: int(x[:4]))
+    df['Month'] = df['Date'].apply(lambda x: int(x[5:7]))
+    df['Day'] = df['Date'].apply(lambda x: int(x[8:]))
+
+    return df
+
+
+def _fetch_15yr_mortgage_rates(start_date=None, end_date=None):
+    """
+    15-Year Fixed Rate Mortgage Average in the United States (MORTGAGE15US)
+    Weekly series resampled to monthly mean.
+    """
+    series = fred.get_series('MORTGAGE15US')
+    df = series.to_frame().reset_index()
+    df.columns = ['Date', '15yr Mortgage Rate']
+    
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    df = df.set_index("Date").resample('MS').mean().reset_index()
+
+    df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
+    df['Year'] = df['Date'].apply(lambda x: int(x[:4]))
+    df['Month'] = df['Date'].apply(lambda x: int(x[5:7]))
+    df['Day'] = df['Date'].apply(lambda x: int(x[8:]))
+
+    return df
+
+
+def _fetch_real_disposable_personal_income(start_date=None, end_date=None):
+    """
+    Real Disposable Personal Income (DSPI)
+    """
+    series = fred.get_series('DSPI')
+    df = series.to_frame().reset_index()
+    df.columns = ['Date', 'RDPI']
+    
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
+    df['Year'] = df['Date'].apply(lambda x: int(x[:4]))
+    df['Month'] = df['Date'].apply(lambda x: int(x[5:7]))
+    df['Day'] = df['Date'].apply(lambda x: int(x[8:]))
+
+    df['RDPI'] = df['RDPI'] * 1000000000
+
+    return df
+
+
+def _fetch_median_home_prices(start_date=None, end_date=None):
+    """
+    Median Sales Price of Houses Sold for the United States (MSPUS)
+    """
+    series = fred.get_series('MSPUS')
+    df = series.to_frame().reset_index()
+    df.columns = ['Date', 'Median Home Sales Price']
+    
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    df = df.set_index("Date").resample('MS').ffill().reset_index()
+
+    df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
+    df['Year'] = df['Date'].apply(lambda x: int(x[:4]))
+    df['Month'] = df['Date'].apply(lambda x: int(x[5:7]))
+    df['Day'] = df['Date'].apply(lambda x: int(x[8:]))
 
     return df
 
@@ -96,23 +248,6 @@ def get_vehicle_ins():
     df.reset_index(inplace=True)
     df.columns = ['Year', 'Vehicle Ins Annual']
 
-    return df
-
-
-def get_total_households():
-    """
-    Total Households (TTLH)
-    """
-    series = fred.get_series('TTLH')
-    df = series.to_frame().reset_index()
-    df.columns = ['Date', 'US Households']
-    df['Date'] = pd.to_datetime(df['Date'])
-    df.set_index('Date', inplace=True)
-    df.index = df.index.year
-    df.reset_index(inplace=True)
-    df.columns = ['Year', 'US Households']
-    df['US Households'] = (df['US Households'] * 1000)
-    
     return df
 
 
@@ -183,70 +318,3 @@ def get_cpi_prices_new_cars():
 
     return df
 
-
-def get_real_disposable_personal_income():
-    """
-    Real Disposable Personal Income (DSPI)
-    """
-    series = fred.get_series('DSPI')
-    df = series.to_frame().reset_index()
-    df.columns = ['Date', 'RDPI']
-    df['Date'] = pd.to_datetime(df['Date'])
-    df.set_index('Date', inplace=True)
-    df = df.resample('YE').max()
-    df.index = df.index.year
-    df.reset_index(inplace=True)
-    df.columns = ['Year', 'RDPI']
-    df['RDPI'] = df['RDPI'] * 1000000000
-
-    return df
-
-
-def get_median_home_prices():
-    """
-    Median Sales Price of Houses Sold for the United States (MSPUS)
-    """
-    series = fred.get_series('MSPUS')
-    df = series.to_frame().reset_index()
-    df.columns = ['Date', 'Median Home Sales Price']
-    df['Date'] = pd.to_datetime(df['Date'])
-    df.set_index('Date', inplace=True)
-    df = df.resample('YE').mean()
-    df.index = df.index.year
-    df.reset_index(inplace=True)
-    df.columns = ['Year', 'Median Home Sales Price']
-
-    return df
-
-
-def get_median_family_income():
-    """
-    Median Annual Family Income in the United States (MEFAINUSA646N)
-    """
-    series = fred.get_series('MEFAINUSA646N')
-    df = series.to_frame().reset_index()
-    df.columns = ['Date', 'Median Family Income']
-    df['Date'] = pd.to_datetime(df['Date'])
-    df.set_index('Date', inplace=True)
-    df.index = df.index.year
-    df.reset_index(inplace=True)
-    df.columns = ['Year', 'Median Family Income']
-
-    return df
-
-
-def get_30yr_mortgage_rates():
-    """
-    30-Year Fixed Rate Mortgage Average in the United States (MORTGAGE30US)
-    """
-    series = fred.get_series('MORTGAGE30US')
-    df = series.to_frame().reset_index()
-    df.columns = ['Date', '30yr Mortgage Rate']
-    df['Date'] = pd.to_datetime(df['Date'])
-    df.set_index('Date', inplace=True)
-    df = df.resample('YE').mean()
-    df.index = df.index.year
-    df.reset_index(inplace=True)
-    df.columns = ['Year', '30yr Mortgage Rate']
-
-    return df

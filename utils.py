@@ -1,5 +1,6 @@
 import pandas as pd
 from functools import reduce
+import numpy as np
 
 
 def scale_for_inflation(cpi_df: pd.DataFrame, from_year: int, to_year: int, amount: float):
@@ -38,3 +39,9 @@ def calc_mtg_pi_payment(principal, annual_rate, years=30):
               ((1 + monthly_rate) ** n_payments - 1)
     
     return payment
+
+
+def sanitize_for_json(df: pd.DataFrame) -> list[dict]:
+    """Convert a DataFrame into JSON-safe records."""
+    safe_df = df.replace({np.nan: None})
+    return safe_df.to_dict(orient="records")
