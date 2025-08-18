@@ -14,9 +14,15 @@ from datasets import (
     _fetch_15yr_mortgage_rates,
     _fetch_real_disposable_personal_income,
     _fetch_median_home_prices,
+    _fetch_caseshiller_home_price_index,
+    _fetch_houshold_ops_spend,
+    _fetch_used_car_prices,
+    _fetch_new_car_prices,
+    _fetch_vehicle_ins_premiums,
+    _fetch_pce_healthcare,
 )
 
-app = FastAPI(title="FRED Data API", version="0.1.0")
+app = FastAPI(title="GovData API", version="0.1.0")
 
 
 datasets = {
@@ -29,6 +35,12 @@ datasets = {
     "mortgage-15yr": _fetch_15yr_mortgage_rates,
     "rdpi": _fetch_real_disposable_personal_income,
     "mspus": _fetch_median_home_prices,
+    "cshi": _fetch_caseshiller_home_price_index,
+    "hh-ops": _fetch_houshold_ops_spend,
+    "used-cars": _fetch_used_car_prices,
+    "new-cars": _fetch_new_car_prices,
+    "vehicle-insurance": _fetch_vehicle_ins_premiums,
+    "pce-healthcare": _fetch_pce_healthcare,
 }
 
 
@@ -211,6 +223,90 @@ def get_mspus(
     """
     try: 
         df:pd.DataFrame = _fetch_median_home_prices(start_date=start_date, end_date=end_date)
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/cshi")
+def get_caseshiller(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+):
+    """S&P CoreLogic Case-Shiller U.S. National Home Price Index (CSUSHPINSA)"""
+    try: 
+        df:pd.DataFrame = _fetch_caseshiller_home_price_index(start_date=start_date, end_date=end_date) 
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/hh-ops")
+def get_household_ops(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+):
+    """Expenditures: Household Operations: All Consumer Units (CXUHHOPERLB0101M)"""
+    try: 
+        df:pd.DataFrame = _fetch_houshold_ops_spend(start_date=start_date, end_date=end_date) 
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/used-cars")
+def get_used_car_prices(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+):
+    """CPI Used Cars and Trucks (CUSR0000SETA02). Prices calculated based on CPI index applied to reference year and price"""
+    try: 
+        df:pd.DataFrame = _fetch_used_car_prices(start_date=start_date, end_date=end_date) 
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/new-cars")
+def get_used_car_prices(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+):
+    """CPI New Cars and Trucks (CUUR0000SETA01). Prices calculated based on CPI index applied to reference year and price"""
+    try: 
+        df:pd.DataFrame = _fetch_new_car_prices(start_date=start_date, end_date=end_date) 
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/vehicle-insurance")
+def get_vehicle_ins_premiums(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+):
+    """Expenditures: Vehicle Insurance: All Consumer Units (CXU500110LB0101M)"""
+    try: 
+        df:pd.DataFrame = _fetch_vehicle_ins_premiums(start_date=start_date, end_date=end_date) 
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/pce-healthcare")
+def get_pce_healthcare(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+):
+    """PCE Services: Healthcare (DHLCRC1Q027SBEA)."""
+    try: 
+        df:pd.DataFrame = _fetch_pce_healthcare(start_date=start_date, end_date=end_date) 
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:

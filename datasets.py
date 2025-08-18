@@ -140,6 +140,7 @@ def _fetch_30yr_mortgage_rates(start_date=None, end_date=None):
         df = df[df['Date'] <= end_date]
     
     df = df.set_index("Date").resample('MS').mean().reset_index()
+    df['30yr Mortgage Rate'] = round(df['30yr Mortgage Rate'], 2)
 
     df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
     df['Year'] = df['Date'].apply(lambda x: int(x[:4]))
@@ -164,6 +165,7 @@ def _fetch_15yr_mortgage_rates(start_date=None, end_date=None):
         df = df[df['Date'] <= end_date]
     
     df = df.set_index("Date").resample('MS').mean().reset_index()
+    df['15yr Mortgage Rate'] = round(df['15yr Mortgage Rate'], 2)
 
     df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
     df['Year'] = df['Date'].apply(lambda x: int(x[:4]))
@@ -219,61 +221,54 @@ def _fetch_median_home_prices(start_date=None, end_date=None):
     return df
 
 
-def get_houshold_ops_spend():
+def _fetch_caseshiller_home_price_index(start_date:str=None, end_date:str=None):
+    """
+    S&P CoreLogic Case-Shiller U.S. National Home Price Index (CSUSHPINSA)
+    """
+    series = fred.get_series('CSUSHPINSA')
+    df = series.to_frame().reset_index()
+    df.columns = ['Date', 'CSHI']
+    df['CSHI'] = round(df['CSHI'], 2)
+    
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
+    df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
+    df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
+    df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
+
+    return df
+
+
+def _fetch_houshold_ops_spend(start_date:str=None, end_date:str=None):
     """
     Expenditures: Household Operations: All Consumer Units (CXUHHOPERLB0101M)
     """
     series = fred.get_series('CXUHHOPERLB0101M')
     df = series.to_frame().reset_index()
     df.columns = ['Date', 'Household Ops Annual']
-    df['Date'] = pd.to_datetime(df['Date'])
-    df.set_index('Date', inplace=True)
-    df.index = df.index.year
-    df.reset_index(inplace=True)
-    df.columns = ['Year', 'Household Ops Annual']
+    
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    df = df.set_index("Date").resample('MS').ffill().reset_index()
+    
+    df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
+    df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
+    df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
+    df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
 
     return df
 
 
-def get_vehicle_ins():
+def _fetch_used_car_prices(start_date:str=None, end_date:str=None):
     """
-    Expenditures: Vehicle Insurance: All Consumer Units (CXU500110LB0101M)
-    """
-    series = fred.get_series('CXU500110lB0101M')
-    df = series.to_frame().reset_index()
-    df.columns = ['Date', 'Vehicle Ins Annual']
-    df['Date'] = pd.to_datetime(df['Date'])
-    df.set_index('Date', inplace=True)
-    df.index = df.index.year
-    df.reset_index(inplace=True)
-    df.columns = ['Year', 'Vehicle Ins Annual']
-
-    return df
-
-
-def get_pce_healthcare():
-    """
-    PCE Services: Healthcare (DHLCRC1Q027SBEA)
-    """
-    series = fred.get_series('DHLCRC1Q027SBEA')
-    df = series.to_frame().reset_index()
-    df.columns = ['Date', 'PCE Healthcare']
-    df['Date'] = pd.to_datetime(df['Date'])
-    df.set_index('Date', inplace=True)
-    df = round(df.resample('YE').mean(), 2)
-    df.index = df.index.year
-    df.reset_index(inplace=True)
-    df.columns = ['Year', 'PCE Healthcare']
-    df['PCE Healthcare'] = df['PCE Healthcare'] * 1000000000
-
-    return df
-
-
-def get_cpi_prices_used_cars():
-    """
-    CPI Used Cars and Trucks (CUSR0000SETA02)
-
-    Prices calculated based on CPI index applied to reference year and price
+    CPI Used Cars and Trucks (CUSR0000SETA02). Prices calculated based on CPI index applied to reference year and price
     """
     ref_year = 2024
     ref_price = 28472
@@ -281,12 +276,16 @@ def get_cpi_prices_used_cars():
     series = fred.get_series('CUSR0000SETA02')
     df = series.to_frame().reset_index()
     df.columns = ['Date', 'Used Auto CPI']
-    df['Date'] = pd.to_datetime(df['Date'])
-    df.set_index('Date', inplace=True)
-    df = df.resample('YE').mean()
-    df.index = df.index.year
-    df.reset_index(inplace=True)
-    df.columns = ['Year', 'Used Auto CPI']
+    
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
+    df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
+    df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
+    df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
 
     ref_cpi = df.loc[df['Year'] == ref_year, 'Used Auto CPI'].values[0]
     df['Est Avg Used Car Price'] = round((df['Used Auto CPI'] * (ref_price / ref_cpi)),2)
@@ -294,11 +293,9 @@ def get_cpi_prices_used_cars():
     return df
 
 
-def get_cpi_prices_new_cars():
+def _fetch_new_car_prices(start_date:str=None, end_date:str=None):
     """
-    CPI New Cars and Trucks (CUUR0000SETA01)
-
-    Prices calculated based on CPI index applied to reference year and price
+    CPI New Cars and Trucks (CUUR0000SETA01). Prices calculated based on CPI index applied to reference year and price
     """
     ref_year = 2024
     ref_price = 48397
@@ -306,15 +303,67 @@ def get_cpi_prices_new_cars():
     series = fred.get_series('CUUR0000SETA01')
     df = series.to_frame().reset_index()
     df.columns = ['Date', 'New Auto CPI']
-    df['Date'] = pd.to_datetime(df['Date'])
-    df.set_index('Date', inplace=True)
-    df = df.resample('YE').mean()
-    df.index = df.index.year
-    df.reset_index(inplace=True)
-    df.columns = ['Year', 'New Auto CPI']
+    
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
+    df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
+    df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
+    df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
 
     ref_cpi = df.loc[df['Year'] == ref_year, 'New Auto CPI'].values[0]
     df['Est Avg New Car Price'] = round((df['New Auto CPI'] * (ref_price / ref_cpi)), 2)
+
+    return df
+
+
+def _fetch_vehicle_ins_premiums(start_date:str=None, end_date:str=None):
+    """
+    Expenditures: Vehicle Insurance: All Consumer Units (CXU500110LB0101M)
+    """
+    series = fred.get_series('CXU500110lB0101M')
+    df = series.to_frame().reset_index()
+    df.columns = ['Date', 'Vehicle Ins Annual']
+    
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    df = df.set_index("Date").resample('MS').ffill().reset_index()
+    
+    df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
+    df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
+    df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
+    df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
+
+    return df
+
+
+def _fetch_pce_healthcare(start_date:str=None, end_date:str=None):
+    """
+    PCE Services: Healthcare (DHLCRC1Q027SBEA).
+    """
+    series = fred.get_series('DHLCRC1Q027SBEA')
+    df = series.to_frame().reset_index()
+    df.columns = ['Date', 'PCE Healthcare']
+    
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    df = df.set_index("Date").resample('MS').ffill().reset_index()
+    
+    df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
+    df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
+    df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
+    df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
+    
+    df['PCE Healthcare'] = df['PCE Healthcare'] * 1000000000
 
     return df
 
