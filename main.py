@@ -25,6 +25,7 @@ from datasets import (
     _fetch_m2_velocity,
     _fetch_gdp,
     _fetch_sofr,
+    _fetch_us_birthrate,
 )
 
 app = FastAPI(title="GovData API", version="0.1.0")
@@ -51,6 +52,7 @@ datasets = {
     "m2-velocity": _fetch_m2_velocity,
     "gdp": _fetch_gdp,
     "sofr": _fetch_sofr,
+    "us-birthrate": _fetch_us_birthrate,
 }
 
 
@@ -178,13 +180,14 @@ def get_median_income(
 @app.get("/mortgage-30yr")
 def get_30yr_mortgage_rates(
     start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
-    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)")
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('A', description="Frequency period")
 ):
     """
     30-Year Fixed Rate Mortgage Average in the United States (MORTGAGE30US)
     """
     try: 
-        df:pd.DataFrame = _fetch_30yr_mortgage_rates(start_date=start_date, end_date=end_date)
+        df:pd.DataFrame = _fetch_30yr_mortgage_rates(start_date=start_date, end_date=end_date, freq=freq)
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -194,13 +197,14 @@ def get_30yr_mortgage_rates(
 @app.get("/mortgage-15yr")
 def get_15yr_mortgage_rates(
     start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
-    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)")
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('A', description="Frequency period")
 ):
     """
     15-Year Fixed Rate Mortgage Average in the United States (MORTGAGE15US)
     """
     try: 
-        df:pd.DataFrame = _fetch_15yr_mortgage_rates(start_date=start_date, end_date=end_date)
+        df:pd.DataFrame = _fetch_15yr_mortgage_rates(start_date=start_date, end_date=end_date, freq=freq)
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -240,7 +244,7 @@ def get_mspus(
 
 
 @app.get("/cshi")
-def get_caseshiller(
+def get_caseshiller_homes_index(
     start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
     end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
 ):
@@ -282,7 +286,7 @@ def get_used_car_prices(
 
 
 @app.get("/new-cars")
-def get_used_car_prices(
+def get_new_car_prices(
     start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
     end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
 ):
@@ -327,10 +331,11 @@ def get_pce_healthcare(
 def get_unrate(
     start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
     end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq: str = Query(None, description="Frequency period")
 ):
     """Unemployment Rate (UNRATE)"""
     try: 
-        df:pd.DataFrame = _fetch_unrate(start_date=start_date, end_date=end_date)   
+        df:pd.DataFrame = _fetch_unrate(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -341,10 +346,11 @@ def get_unrate(
 def get_m2_supply(
     start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
     end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq: str = Query(None, description="Frequency period")
 ):
     """M2 (WM2NS)"""
     try: 
-        df:pd.DataFrame = _fetch_m2_supply(start_date=start_date, end_date=end_date)   
+        df:pd.DataFrame = _fetch_m2_supply(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -352,13 +358,14 @@ def get_m2_supply(
 
 
 @app.get("/m2-velocity")
-def get_m2_supply(
+def get_m2_velocity(
     start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
     end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq: str = Query(None, description="Frequency period")
 ):
     """Velocity of M2 Money Stock (M2V)"""
     try: 
-        df:pd.DataFrame = _fetch_m2_velocity(start_date=start_date, end_date=end_date)   
+        df:pd.DataFrame = _fetch_m2_velocity(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -366,13 +373,14 @@ def get_m2_supply(
 
 
 @app.get("/gdp")
-def get_m2_supply(
+def get_gdp(
     start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
     end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq: str = Query(None, description="Frequency period")
 ):
     """Gross Domestic Product (GDP)"""
     try: 
-        df:pd.DataFrame = _fetch_gdp(start_date=start_date, end_date=end_date)   
+        df:pd.DataFrame = _fetch_gdp(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -383,10 +391,26 @@ def get_m2_supply(
 def get_sofr(
     start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
     end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query(None, description="Frequency Period")
 ):
     """Secured Overnight Financing Rate (SOFR)"""
     try: 
-        df:pd.DataFrame = _fetch_sofr(start_date=start_date, end_date=end_date)   
+        df:pd.DataFrame = _fetch_sofr(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/us-birthrate")
+def get_us_birthrate(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('A', description="Frequency period")
+):
+    """Crude Birth Rate for the United States (SPDYNCBRTINUSA)"""
+    try: 
+        df:pd.DataFrame = _fetch_us_birthrate(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:

@@ -124,10 +124,11 @@ def _fetch_median_family_income(start_date=None, end_date=None):
     return df
 
 
-def _fetch_30yr_mortgage_rates(start_date=None, end_date=None):
+def _fetch_30yr_mortgage_rates(start_date=None, end_date=None, freq:str=None):
     """
     30-Year Fixed Rate Mortgage Average in the United States (MORTGAGE30US)
-    Weekly series resampled to monthly mean.
+    
+    Frequencies: Weekly - W (default), Monthly - M
     """
     series = fred.get_series('MORTGAGE30US')
     df = series.to_frame().reset_index()
@@ -138,8 +139,10 @@ def _fetch_30yr_mortgage_rates(start_date=None, end_date=None):
     if end_date is not None:
         df = df[df['Date'] <= end_date]
     
-    df = df.set_index("Date").resample('MS').mean().reset_index()
-    df['30yr Mortgage Rate'] = round(df['30yr Mortgage Rate'], 2)
+    if freq == 'M':
+        df = df.set_index("Date").resample('MS').mean().reset_index()
+    
+    df['30yr Mortgage Rate'] = round(df['30yr Mortgage Rate'], 3)
 
     df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
     df['Year'] = df['Date'].apply(lambda x: int(x[:4]))
@@ -149,10 +152,11 @@ def _fetch_30yr_mortgage_rates(start_date=None, end_date=None):
     return df
 
 
-def _fetch_15yr_mortgage_rates(start_date=None, end_date=None):
+def _fetch_15yr_mortgage_rates(start_date=None, end_date=None, freq:str=None):
     """
     15-Year Fixed Rate Mortgage Average in the United States (MORTGAGE15US)
-    Weekly series resampled to monthly mean.
+    
+    Frequencies: Weekly - W (default), Monthly - M
     """
     series = fred.get_series('MORTGAGE15US')
     df = series.to_frame().reset_index()
@@ -163,8 +167,10 @@ def _fetch_15yr_mortgage_rates(start_date=None, end_date=None):
     if end_date is not None:
         df = df[df['Date'] <= end_date]
     
-    df = df.set_index("Date").resample('MS').mean().reset_index()
-    df['15yr Mortgage Rate'] = round(df['15yr Mortgage Rate'], 2)
+    if freq == 'M':
+        df = df.set_index("Date").resample('MS').mean().reset_index()
+    
+    df['15yr Mortgage Rate'] = round(df['15yr Mortgage Rate'], 3)
 
     df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
     df['Year'] = df['Date'].apply(lambda x: int(x[:4]))
@@ -367,9 +373,12 @@ def _fetch_pce_healthcare(start_date:str=None, end_date:str=None):
     return df
 
 
-def _fetch_unrate(start_date:str=None, end_date:str=None):
+def _fetch_unrate(start_date:str=None, end_date:str=None, freq:str=None):
     """
     Unemployment Rate (UNRATE)
+
+    Frequencies: Monthly - M (default), Quarterly - Q
+    Default period aggregation is mean.
     """
     series = fred.get_series('UNRATE')
     df = series.to_frame().reset_index()
@@ -380,17 +389,25 @@ def _fetch_unrate(start_date:str=None, end_date:str=None):
     if end_date is not None:
         df = df[df['Date'] <= end_date]
     
+    if freq == 'Q':
+        df = df.set_index('Date').resample('QS').mean().reset_index()
+    
     df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
     df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
     df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
     df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
 
+    df['Unrate'] = round(df['Unrate'], 2)
+
     return df
 
 
-def _fetch_m2_supply(start_date:str=None, end_date:str=None):
+def _fetch_m2_supply(start_date:str=None, end_date:str=None, freq:str=None):
     """
     M2 (M2SL)
+
+    Frequencies: Monthly - M (default), Quarterly - Q, Annual - A
+    Default period aggregation is mean.
     """
     series = fred.get_series('M2SL')
     df = series.to_frame().reset_index()
@@ -400,6 +417,11 @@ def _fetch_m2_supply(start_date:str=None, end_date:str=None):
         df = df[df['Date'] >= start_date]
     if end_date is not None:
         df = df[df['Date'] <= end_date]
+    
+    if freq == "Q":
+        df = df.set_index('Date').resample('QS').mean().reset_index()
+    if freq == "A":
+        df = df.set_index('Date').resample('A').mean().reset_index()
     
     df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
     df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
@@ -411,9 +433,11 @@ def _fetch_m2_supply(start_date:str=None, end_date:str=None):
     return df
 
 
-def _fetch_m2_velocity(start_date:str=None, end_date:str=None):
+def _fetch_m2_velocity(start_date:str=None, end_date:str=None, freq:str=None):
     """
     Velocity of M2 Money Stock (M2V)
+
+    Frequencies: Quarterly - Q (default), Monthly - M
     """
     series = fred.get_series('M2V')
     df = series.to_frame().reset_index()
@@ -424,7 +448,8 @@ def _fetch_m2_velocity(start_date:str=None, end_date:str=None):
     if end_date is not None:
         df = df[df['Date'] <= end_date]
     
-    df = df.set_index("Date").resample('MS').ffill().reset_index()
+    if freq == 'M':
+        df = df.set_index("Date").resample('MS').ffill().reset_index()
     
     df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
     df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
@@ -434,20 +459,25 @@ def _fetch_m2_velocity(start_date:str=None, end_date:str=None):
     return df
 
 
-def _fetch_gdp(start_date:str=None, end_date:str=None):
+def _fetch_gdp(start_date:str=None, end_date:str=None, freq:str=None):
     """
     Gross Domestic Product (GDP)
+
+    Frequencies: Quarterly - Q (default), Monthly - M
     """
     series = fred.get_series('GDP')
     df = series.to_frame().reset_index()
     df.columns = ['Date', 'GDP']
+    df['Date'] = pd.to_datetime(df['Date'])
+    df['Date'] = df['Date'] - pd.Timedelta(days=1)
     
     if start_date is not None:
         df = df[df['Date'] >= start_date]
     if end_date is not None:
         df = df[df['Date'] <= end_date]
     
-    df = df.set_index("Date").resample('MS').ffill().reset_index()
+    if freq == 'M':
+        df = df.set_index("Date").resample('MS').ffill().reset_index()
     
     df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
     df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
@@ -459,9 +489,12 @@ def _fetch_gdp(start_date:str=None, end_date:str=None):
     return df
 
 
-def _fetch_sofr(start_date:str=None, end_date:str=None):
+def _fetch_sofr(start_date:str=None, end_date:str=None, freq:str=None):
     """
     Secured Overnight Financing Rate (SOFR)
+
+    Frequencies: Daily - D (default), Weekly - W, Monthly - W, Quarterly - M
+    Default period aggregation is mean.
     """
     series = fred.get_series('SOFR')
     df = series.to_frame().reset_index()
@@ -472,9 +505,41 @@ def _fetch_sofr(start_date:str=None, end_date:str=None):
     if end_date is not None:
         df = df[df['Date'] <= end_date]
     
-    df = df.set_index("Date").resample('MS').mean().reset_index()
+    if freq == 'W':
+        df = df.set_index("Date").resample('W').mean().reset_index()
+    if freq == 'M':
+        df = df.set_index("Date").resample('MS').mean().reset_index()
+    if freq == 'Q':
+        df = df.set_index("Date").resample('QS').mean().reset_index()
+
     df['SOFR'] = round(df['SOFR'], 3)
     
+    df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
+    df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
+    df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
+    df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
+
+    return df
+
+
+def _fetch_us_birthrate(start_date:str=None, end_date:str=None, freq:str=None):
+    """
+    Crude Birth Rate for the United States (SPDYNCBRTINUSA). Births per 1000 people.
+
+    Frequencies: Annual - A (default), Monthly - M
+    """
+    series = fred.get_series('SPDYNCBRTINUSA')
+    df = series.to_frame().reset_index()
+    df.columns = ['Date', 'Births Per 1000']
+
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    if freq.upper() == 'M':
+        df = df.set_index("Date").resample('MS').ffill().reset_index()
+
     df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
     df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
     df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
