@@ -367,3 +367,118 @@ def _fetch_pce_healthcare(start_date:str=None, end_date:str=None):
 
     return df
 
+
+def _fetch_unrate(start_date:str=None, end_date:str=None):
+    """
+    Unemployment Rate (UNRATE)
+    """
+    series = fred.get_series('UNRATE')
+    df = series.to_frame().reset_index()
+    df.columns = ['Date', 'Unrate']
+    
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
+    df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
+    df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
+    df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
+
+    return df
+
+
+def _fetch_m2_supply(start_date:str=None, end_date:str=None):
+    """
+    M2 (M2SL)
+    """
+    series = fred.get_series('M2SL')
+    df = series.to_frame().reset_index()
+    df.columns = ['Date', 'M2 Supply']
+    
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
+    df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
+    df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
+    df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
+
+    df['M2 Supply'] = df['M2 Supply'] * 1000000000
+
+    return df
+
+
+def _fetch_m2_velocity(start_date:str=None, end_date:str=None):
+    """
+    Velocity of M2 Money Stock (M2V)
+    """
+    series = fred.get_series('M2V')
+    df = series.to_frame().reset_index()
+    df.columns = ['Date', 'M2 Velocity']
+    
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    df = df.set_index("Date").resample('MS').ffill().reset_index()
+    
+    df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
+    df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
+    df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
+    df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
+
+    return df
+
+
+def _fetch_gdp(start_date:str=None, end_date:str=None):
+    """
+    Gross Domestic Product (GDP)
+    """
+    series = fred.get_series('GDP')
+    df = series.to_frame().reset_index()
+    df.columns = ['Date', 'GDP']
+    
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    df = df.set_index("Date").resample('MS').ffill().reset_index()
+    
+    df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
+    df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
+    df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
+    df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
+
+    df['GDP'] = df['GDP'] * 1000000000
+
+    return df
+
+
+def _fetch_sofr(start_date:str=None, end_date:str=None):
+    """
+    Secured Overnight Financing Rate (SOFR)
+    """
+    series = fred.get_series('SOFR')
+    df = series.to_frame().reset_index()
+    df.columns = ['Date', 'SOFR']
+    
+    if start_date is not None:
+        df = df[df['Date'] >= start_date]
+    if end_date is not None:
+        df = df[df['Date'] <= end_date]
+    
+    df = df.set_index("Date").resample('MS').mean().reset_index()
+    df['SOFR'] = round(df['SOFR'], 3)
+    
+    df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
+    df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
+    df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
+    df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
+
+    return df

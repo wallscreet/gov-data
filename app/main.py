@@ -2,9 +2,9 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 import pandas as pd
 from functools import reduce
-from utils import sanitize_for_json
+from app.utils import sanitize_for_json
 
-from datasets import (
+from app.datasets import (
     _fetch_us_population,
     _fetch_cpi,
     _fetch_pce,
@@ -20,6 +20,11 @@ from datasets import (
     _fetch_new_car_prices,
     _fetch_vehicle_ins_premiums,
     _fetch_pce_healthcare,
+    _fetch_unrate,
+    _fetch_m2_supply,
+    _fetch_m2_velocity,
+    _fetch_gdp,
+    _fetch_sofr,
 )
 
 app = FastAPI(title="GovData API", version="0.1.0")
@@ -41,6 +46,11 @@ datasets = {
     "new-cars": _fetch_new_car_prices,
     "vehicle-insurance": _fetch_vehicle_ins_premiums,
     "pce-healthcare": _fetch_pce_healthcare,
+    "unrate": _fetch_unrate,
+    "m2-supply": _fetch_m2_supply,
+    "m2-velocity": _fetch_m2_velocity,
+    "gdp": _fetch_gdp,
+    "sofr": _fetch_sofr,
 }
 
 
@@ -307,6 +317,76 @@ def get_pce_healthcare(
     """PCE Services: Healthcare (DHLCRC1Q027SBEA)."""
     try: 
         df:pd.DataFrame = _fetch_pce_healthcare(start_date=start_date, end_date=end_date) 
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/unrate")
+def get_unrate(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+):
+    """Unemployment Rate (UNRATE)"""
+    try: 
+        df:pd.DataFrame = _fetch_unrate(start_date=start_date, end_date=end_date)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/m2-supply")
+def get_m2_supply(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+):
+    """M2 (WM2NS)"""
+    try: 
+        df:pd.DataFrame = _fetch_m2_supply(start_date=start_date, end_date=end_date)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/m2-velocity")
+def get_m2_supply(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+):
+    """Velocity of M2 Money Stock (M2V)"""
+    try: 
+        df:pd.DataFrame = _fetch_m2_velocity(start_date=start_date, end_date=end_date)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/gdp")
+def get_m2_supply(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+):
+    """Gross Domestic Product (GDP)"""
+    try: 
+        df:pd.DataFrame = _fetch_gdp(start_date=start_date, end_date=end_date)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/sofr")
+def get_sofr(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+):
+    """Secured Overnight Financing Rate (SOFR)"""
+    try: 
+        df:pd.DataFrame = _fetch_sofr(start_date=start_date, end_date=end_date)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
