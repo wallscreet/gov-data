@@ -2,9 +2,9 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 import pandas as pd
 from functools import reduce
-from app.utils import sanitize_for_json
+from utils import sanitize_for_json
 
-from app.datasets import (
+from datasets import (
     _fetch_us_population,
     _fetch_cpi,
     _fetch_pce,
