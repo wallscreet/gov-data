@@ -26,6 +26,7 @@ from datasets import (
     _fetch_gdp,
     _fetch_sofr,
     _fetch_us_birthrate,
+    _build_home_affordability,
 )
 
 app = FastAPI(title="GovData API", version="0.1.0")
@@ -53,6 +54,7 @@ datasets = {
     "gdp": _fetch_gdp,
     "sofr": _fetch_sofr,
     "us-birthrate": _fetch_us_birthrate,
+    "home-affordability": _build_home_affordability,
 }
 
 
@@ -411,6 +413,22 @@ def get_us_birthrate(
     """Crude Birth Rate for the United States (SPDYNCBRTINUSA)"""
     try: 
         df:pd.DataFrame = _fetch_us_birthrate(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/home-affordability")
+def get_home_affordability(
+    start_year: int | None = Query(None, description="Filter start year (YYYY)"),
+    end_year: int | None = Query(None, description="Filter end year (YYYY)"),
+):
+    """
+    Merged Report exploring prices and premiums of buying a home over the years.
+    """
+    try: 
+        df:pd.DataFrame = _build_home_affordability(start_year=start_year, end_year=end_year)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
