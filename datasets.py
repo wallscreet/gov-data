@@ -578,10 +578,11 @@ def _build_home_affordability(start_year:int=None, end_year:int=None):
     hoi_df.index = hoi_df.index.year
     hoi_df.reset_index(inplace=True)
     hoi_df.columns = ['Year', 'HOI PPI']
+    hoi_df['HOI PPI'] = round(hoi_df['HOI PPI'], 3)
 
     #Estimate HOI premiums based on reference year adjusted by PPI
     hoi_ref_cpi = hoi_df.loc[hoi_df['Year'] == hoi_ref_year, 'HOI PPI'].values[0]
-    hoi_df['Est HOI Premium'] = (hoi_df['HOI PPI'] * (hoi_ref_premium / hoi_ref_cpi))
+    hoi_df['Est HOI Premium'] = round((hoi_df['HOI PPI'] * (hoi_ref_premium / hoi_ref_cpi)), 2)
 
     #Merge the datasets
     merged_hoi_df = merge_on_year([hoi_df, cpi_df], how='outer')
@@ -597,7 +598,7 @@ def _build_home_affordability(start_year:int=None, end_year:int=None):
         premium_anchor * (merged_hoi_df.loc[mask, "CPI"] / cpi_anchor)
     )
     merged_hoi_df.loc[mask, "HOI PPI"] = np.nan
-    # Add scaled premiums
+    # Add scaled premiums using CPI
     merged_hoi_df['Scaled Premium'] = merged_hoi_df.apply(lambda row: scale_for_inflation(cpi_df, 2024, row['Year'], row['Est HOI Premium']), axis=1)
 
     #Median Home Prices DF - resampled to annual as mean
@@ -637,11 +638,12 @@ def _build_home_affordability(start_year:int=None, end_year:int=None):
     cdf = merge_on_year([merged_hoi_df, df_home_median_prices_annual, df_median_family_income, df_mtg30])
     cdf['Avg Loan Amount'] = cdf['Median Sales Price'] * .8
     cdf['Mtg PI Monthly'] = cdf.apply(lambda row: calc_mtg_pi_payment(row['Avg Loan Amount'], row['30yr Mtg Rate']), axis=1).round(2)
-    cdf['Mtg PI Annual'] = cdf['Mtg PI Monthly'] * 12
-    cdf['Mtg PII Annual'] = cdf['Mtg PI Annual'] + cdf['Scaled Premium']
+    cdf['Mtg PI Annual'] = round(cdf['Mtg PI Monthly'] * 12, 2)
+    cdf['Mtg PII Annual'] = round(cdf['Mtg PI Annual'] + cdf['Scaled Premium'], 2)
     cdf['Mtg PII Monthly'] = round((cdf['Mtg PI Annual'] / 12) + (cdf['Scaled Premium'] / 12), 2)
-    cdf['Mtg Ratio'] = cdf['Mtg PII Annual'] / cdf['Median Family Income']
+    cdf['Mtg Ratio'] = round(cdf['Mtg PII Annual'] / cdf['Median Family Income'], 3)
 
+    #Filter by year(s)
     if start_year is not None:
         cdf = cdf[cdf['Year'] >= start_year]
     if end_year is not None:
