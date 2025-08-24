@@ -27,6 +27,13 @@ from datasets import (
     _fetch_sofr,
     _fetch_us_birthrate,
     _build_home_affordability,
+    _fetch_unemployment_level,
+    _fetch_job_openings,
+    _fetch_fed_funds_rate,
+    _fetch_median_home_price_new,
+    _fetch_new_homes_ns,
+    _fetch_new_homes_uc,
+    _fetch_new_homes_comp,
 )
 
 app = FastAPI(title="GovData API", version="0.1.0")
@@ -42,6 +49,7 @@ datasets = {
     "mortgage-15yr": _fetch_15yr_mortgage_rates,
     "rdpi": _fetch_real_disposable_personal_income,
     "mspus": _fetch_median_home_prices,
+    "mspnus": _fetch_median_home_price_new,
     "cshi": _fetch_caseshiller_home_price_index,
     "hh-ops": _fetch_houshold_ops_spend,
     "used-cars": _fetch_used_car_prices,
@@ -55,6 +63,12 @@ datasets = {
     "sofr": _fetch_sofr,
     "us-birthrate": _fetch_us_birthrate,
     "home-affordability": _build_home_affordability,
+    "unemployment-level": _fetch_unemployment_level,
+    "job-openings": _fetch_job_openings,
+    "fed-funds-rate": _fetch_fed_funds_rate,
+    "new-homes-ns": _fetch_new_homes_ns,
+    "new-homes-uc": _fetch_new_homes_uc,
+    "new-homes-comp": _fetch_new_homes_comp,
 }
 
 
@@ -236,6 +250,22 @@ def get_mspus(
 ):
     """
     Median Sales Price of Houses Sold for the United States (MSPUS)
+    """
+    try: 
+        df:pd.DataFrame = _fetch_median_home_prices(start_date=start_date, end_date=end_date)
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/mspnus")
+def get_msp_new_homes(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)")
+):
+    """
+    Median Sales Price for New Houses Sold in the United States (MSPNHSUS)
     """
     try: 
         df:pd.DataFrame = _fetch_median_home_prices(start_date=start_date, end_date=end_date)
@@ -429,6 +459,97 @@ def get_home_affordability(
     """
     try: 
         df:pd.DataFrame = _build_home_affordability(start_year=start_year, end_year=end_year)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/unemployed")
+def get_unemployed(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('M', description="Frequency period")
+):
+    """Unemployment Level (UNEMPLOY) as count of Unemployed"""
+    try: 
+        df:pd.DataFrame = _fetch_unemployment_level(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/job-openings")
+def get_job_openings(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('M', description="Frequency period")
+):
+    """Job Openings: Total Nonfarm (JTSJOL)"""
+    try: 
+        df:pd.DataFrame = _fetch_job_openings(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/fed-funds")
+def get_fed_funds_rate(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('M', description="Frequency period")
+):
+    """Federal Funds Effective Rate (FEDFUNDS)"""
+    try: 
+        df:pd.DataFrame = _fetch_fed_funds_rate(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# New Houses for Sale by Stage of Construction, Not Started (NHFSEPNTS)
+@app.get("/new-homes-ns")
+def get_new_homes_ns(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('M', description="Frequency period")
+):
+    """New Houses for Sale by Stage of Construction, Not Started (NHFSEPNTS)"""
+    try: 
+        df:pd.DataFrame = _fetch_new_homes_ns(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.get("/new-homes-uc")
+def get_new_homes_uc(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('M', description="Frequency period")
+):
+    """New Houses for Sale (Units) by Stage of Construction, Under Construction (NHFSEPUCS)"""
+    try: 
+        df:pd.DataFrame = _fetch_new_homes_uc(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/new-homes-comp")
+def get_new_homes_comp(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('M', description="Frequency period")
+):
+    """New Houses for Sale (Units) by Stage of Construction, Under Construction (NHFSEPUCS)"""
+    try: 
+        df:pd.DataFrame = _fetch_new_homes_comp(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
