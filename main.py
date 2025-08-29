@@ -34,6 +34,7 @@ from datasets import (
     _fetch_new_homes_ns,
     _fetch_new_homes_uc,
     _fetch_new_homes_comp,
+    _fetch_birth_death_data,
 )
 
 app = FastAPI(title="GovData API", version="0.1.0")
@@ -69,6 +70,7 @@ datasets = {
     "new-homes-ns": _fetch_new_homes_ns,
     "new-homes-uc": _fetch_new_homes_uc,
     "new-homes-comp": _fetch_new_homes_comp,
+    "us-births-deaths-by-race": _fetch_birth_death_data,
 }
 
 
@@ -128,7 +130,7 @@ def get_cpi(
 ):
     """Consumer Price Index for All Urban Consumers (CPIAUCSL)."""
     try: 
-        df:pd.DataFrame = _fetch_cpi(start_date=start_date, end_date=end_date) 
+        df:pd.DataFrame = _fetch_cpi(start_date=start_date, end_date=end_date)
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -552,5 +554,19 @@ def get_new_homes_comp(
         df:pd.DataFrame = _fetch_new_homes_comp(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/us-births-deaths-by-race")
+def get_birth_death_data(
+    start_year: int | None = Query(None, description="Filter start year (e.g. 2000)"),
+    end_year: int | None = Query(None, description="Filter end year (e.g. 2023)"),
+    race: str | None = Query(None, description="Race/Ethnicity filter ('All', 'White', 'Black', 'Hispanic')")
+):
+    """Births and Deaths by Race/Ethnicity (CDC)"""
+    try:
+        df: pd.DataFrame = _fetch_birth_death_data(start_year=start_year, end_year=end_year, race=race)
+        return JSONResponse(content=df.to_dict(orient="records"))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -1,3 +1,4 @@
+from http.client import HTTPException
 import pandas as pd
 from fredapi import Fred
 from dotenv import load_dotenv
@@ -301,6 +302,17 @@ def _fetch_used_car_prices(start_date:str=None, end_date:str=None):
     ref_year = 2024
     ref_price = 28472
 
+    #CPI table - resampled to annual on mean
+    cpi = fred.get_series('CPIAUCSL')
+    cpi_df = cpi.to_frame().reset_index()
+    cpi_df.columns = ['Date', 'CPI']
+    cpi_df['Date'] = pd.to_datetime(cpi_df['Date'])
+    cpi_df.set_index('Date', inplace=True)
+    cpi_df = cpi_df.resample('YE').max()
+    cpi_df.index = cpi_df.index.year
+    cpi_df.reset_index(inplace=True)
+    cpi_df.columns = ['Year', 'CPI']
+
     series = fred.get_series('CUSR0000SETA02')
     df = series.to_frame().reset_index()
     df.columns = ['Date', 'Used Auto CPI']
@@ -316,7 +328,9 @@ def _fetch_used_car_prices(start_date:str=None, end_date:str=None):
     df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
 
     ref_cpi = df.loc[df['Year'] == ref_year, 'Used Auto CPI'].values[0]
-    df['Est Avg Used Car Price'] = round((df['Used Auto CPI'] * (ref_price / ref_cpi)),2)
+    df['Est Avg Used Car Price Real'] = round((df['Used Auto CPI'] * (ref_price / ref_cpi)),2)
+    
+    df['Est Avg Used Car Price'] = df.apply(lambda row: scale_for_inflation(cpi_df, ref_year, row['Year'], row['Est Avg Used Car Price Real']), axis=1)
 
     return df
 
@@ -327,6 +341,17 @@ def _fetch_new_car_prices(start_date:str=None, end_date:str=None):
     """
     ref_year = 2024
     ref_price = 48397
+
+    #CPI table - resampled to annual on mean
+    cpi = fred.get_series('CPIAUCSL')
+    cpi_df = cpi.to_frame().reset_index()
+    cpi_df.columns = ['Date', 'CPI']
+    cpi_df['Date'] = pd.to_datetime(cpi_df['Date'])
+    cpi_df.set_index('Date', inplace=True)
+    cpi_df = cpi_df.resample('YE').max()
+    cpi_df.index = cpi_df.index.year
+    cpi_df.reset_index(inplace=True)
+    cpi_df.columns = ['Year', 'CPI']
 
     series = fred.get_series('CUUR0000SETA01')
     df = series.to_frame().reset_index()
@@ -343,7 +368,9 @@ def _fetch_new_car_prices(start_date:str=None, end_date:str=None):
     df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
 
     ref_cpi = df.loc[df['Year'] == ref_year, 'New Auto CPI'].values[0]
-    df['Est Avg New Car Price'] = round((df['New Auto CPI'] * (ref_price / ref_cpi)), 2)
+    df['Est Avg New Car Price Real'] = round((df['New Auto CPI'] * (ref_price / ref_cpi)), 2)
+
+    df['Est Avg New Car Price'] = df.apply(lambda row: scale_for_inflation(cpi_df, ref_year, row['Year'], row['Est Avg New Car Price Real']), axis=1)
 
     return df
 
@@ -811,5 +838,40 @@ def _fetch_new_homes_comp(start_date:str=None, end_date:str=None, freq:str=None)
     df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
 
     df['New Homes Comp'] = df['New Homes Comp'] * 1000
+
+    return df
+
+
+def _fetch_birth_death_data(
+    start_year: int | None = None,
+    end_year: int | None = None,
+    race: str | None = None
+) -> pd.DataFrame:
+    """
+    Births and Deaths by Race/Ethnicity (CDC Exfil)
+    """
+    race_map = {
+        "all": "All Races/Ethnicities",
+        "white": "Non-Hispanic White",
+        "black": "Non-Hispanic Black",
+        "hispanic": "Hispanic",
+    }
+
+    df = pd.read_csv("static_datasets/us_births_deaths.csv")
+
+    if start_year is not None:
+        df = df[df["Year"] >= start_year]
+    if end_year is not None:
+        df = df[df["Year"] <= end_year]
+    if race is not None:
+        race_key = race.lower()
+        if race_key not in race_map:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid race value '{race}'. Valid options: {list(race_map.keys())}"
+            )
+        df = df[df["RaceEthnicity"] == race_map[race_key]]
+
+    df["Year"] = df["Year"].astype(int)
 
     return df
