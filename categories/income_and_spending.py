@@ -16,7 +16,7 @@ fred = Fred(api_key=FRED_API_KEY)
 
 def _fetch_real_disposable_personal_income(start_date=None, end_date=None):
     """
-    Real Disposable Personal Income (DSPI)
+    Real Disposable Personal Income (DSPI) | path: /rdpi | default freq:
     """
     series = fred.get_series('DSPI')
     df = series.to_frame().reset_index()
@@ -37,7 +37,7 @@ def _fetch_real_disposable_personal_income(start_date=None, end_date=None):
 
 def _fetch_vehicle_ins_premiums(start_date:str=None, end_date:str=None):
     """
-    Expenditures: Vehicle Insurance: All Consumer Units (CXU500110LB0101M)
+    Expenditures: Vehicle Insurance: All Consumer Units (CXU500110LB0101M) | path: /vehicle-insurance | default freq: M 
     """
     series = fred.get_series('CXU500110lB0101M')
     df = series.to_frame().reset_index()
@@ -60,7 +60,7 @@ def _fetch_vehicle_ins_premiums(start_date:str=None, end_date:str=None):
 
 def _fetch_pce_healthcare(start_date:str=None, end_date:str=None):
     """
-    PCE Services: Healthcare (DHLCRC1Q027SBEA).
+    PCE Services: Healthcare (DHLCRC1Q027SBEA) | path: /pce-healthcare | default freq: M
     """
     series = fred.get_series('DHLCRC1Q027SBEA')
     df = series.to_frame().reset_index()
@@ -85,7 +85,7 @@ def _fetch_pce_healthcare(start_date:str=None, end_date:str=None):
 
 def _fetch_houshold_ops_spend(start_date:str=None, end_date:str=None):
     """
-    Expenditures: Household Operations: All Consumer Units (CXUHHOPERLB0101M)
+    Expenditures: Household Operations: All Consumer Units (CXUHHOPERLB0101M) | path: /hh-ops | default freq: M
     """
     series = fred.get_series('CXUHHOPERLB0101M')
     df = series.to_frame().reset_index()
@@ -108,7 +108,7 @@ def _fetch_houshold_ops_spend(start_date:str=None, end_date:str=None):
 
 def _fetch_build_home_affordability(start_year:int=None, end_year:int=None):
     """
-    Home affordabiltiy matrix by year
+    Home affordabiltiy matrix by year | path: /home-affordability | default freq: A
     """
     hoi_ref_premium = 3303
     hoi_ref_year = 2024
