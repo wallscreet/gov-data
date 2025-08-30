@@ -3,124 +3,44 @@ from fastapi.responses import JSONResponse
 import pandas as pd
 from functools import reduce
 from utils import sanitize_for_json
+import inspect
+import categories.demographics as demographics
+import categories.housing as housing
+import categories.income_and_spending as income_and_spending
+import categories.inflation_and_prices as inflation_and_prices
+import categories.money_aggregates as money_aggregates
+import categories.output_and_growth as output_and_growth
+import categories.rates as rates
+import categories.wages_and_employment as wages_and_employment
 
-from datasets import (
-    _fetch_us_population,
-    _fetch_cpi,
-    _fetch_pce,
-    _fetch_us_households,
-    _fetch_median_family_income,
-    _fetch_30yr_mortgage_rates,
-    _fetch_15yr_mortgage_rates,
-    _fetch_real_disposable_personal_income,
-    _fetch_median_home_prices,
-    _fetch_caseshiller_home_price_index,
-    _fetch_houshold_ops_spend,
-    _fetch_used_car_prices,
-    _fetch_new_car_prices,
-    _fetch_vehicle_ins_premiums,
-    _fetch_pce_healthcare,
-    _fetch_unrate,
-    _fetch_m2_supply,
-    _fetch_m2_velocity,
-    _fetch_gdp,
-    _fetch_sofr,
-    _fetch_us_birthrate,
-    _build_home_affordability,
-    _fetch_unemployment_level,
-    _fetch_job_openings,
-    _fetch_fed_funds_rate,
-    _fetch_median_home_price_new,
-    _fetch_new_homes_ns,
-    _fetch_new_homes_uc,
-    _fetch_new_homes_comp,
-    _fetch_birth_death_data,
-)
+
+modules = {
+    "Demographics": demographics,
+    "Housing": housing,
+    "Income and Spending": income_and_spending,
+    "Inflation and Prices": inflation_and_prices,
+    "Money Aggregates": money_aggregates,
+    "Output and Growth": output_and_growth,
+    "Rates": rates,
+    "Wages and Employment": wages_and_employment,
+}
+
 
 app = FastAPI(title="GovData API", version="0.1.0")
 
 
-datasets = {
-    "cpi": _fetch_cpi,
-    "pce": _fetch_pce,
-    "households": _fetch_us_households,
-    "population": _fetch_us_population,
-    "median-family-income": _fetch_median_family_income,
-    "mortgage-30yr": _fetch_30yr_mortgage_rates,
-    "mortgage-15yr": _fetch_15yr_mortgage_rates,
-    "rdpi": _fetch_real_disposable_personal_income,
-    "mspus": _fetch_median_home_prices,
-    "mspnus": _fetch_median_home_price_new,
-    "cshi": _fetch_caseshiller_home_price_index,
-    "hh-ops": _fetch_houshold_ops_spend,
-    "used-cars": _fetch_used_car_prices,
-    "new-cars": _fetch_new_car_prices,
-    "vehicle-insurance": _fetch_vehicle_ins_premiums,
-    "pce-healthcare": _fetch_pce_healthcare,
-    "unrate": _fetch_unrate,
-    "m2-supply": _fetch_m2_supply,
-    "m2-velocity": _fetch_m2_velocity,
-    "gdp": _fetch_gdp,
-    "sofr": _fetch_sofr,
-    "us-birthrate": _fetch_us_birthrate,
-    "home-affordability": _build_home_affordability,
-    "unemployment-level": _fetch_unemployment_level,
-    "job-openings": _fetch_job_openings,
-    "fed-funds-rate": _fetch_fed_funds_rate,
-    "new-homes-ns": _fetch_new_homes_ns,
-    "new-homes-uc": _fetch_new_homes_uc,
-    "new-homes-comp": _fetch_new_homes_comp,
-    "us-births-deaths-by-race": _fetch_birth_death_data,
-}
-
-
 @app.get("/")
 def root():
-    return {"message": "GovData API", "available_datasets": list(datasets.keys())}
-
-
-@app.get("/dataset/{dataset_name}")
-def get_dataset(
-    dataset_name: str,
-    start: int | None = Query(None),
-    end: int | None = Query(None),
-):
-    
-    if dataset_name not in datasets:
-        raise HTTPException(status_code=404, detail="Dataset not found")
-
-    try:
-        df: pd.DataFrame = datasets[dataset_name]()
-
-        # Apply filters
-        if start is not None:
-            df = df[df["Year"] >= start]
-        if end is not None:
-            df = df[df["Year"] <= end]
-        
-        return JSONResponse(sanitize_for_json(df))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/merge")
-def merge_datasets(
-    names: str = Query(..., description="Comma-separated dataset names"),
-    how: str = Query("inner", description="Merge type: inner, outer, left, right"),
-):
-    dataset_list = names.split(",")
-
-    dfs = []
-    for name in dataset_list:
-        if name not in datasets:
-            raise HTTPException(status_code=404, detail=f"Dataset {name} not found")
-        
-        dfs.append(datasets[name]())
-
-    # Merge on Year
-    merged_df = reduce(lambda left, right: pd.merge(left, right, on="Year", how=how), dfs)
-
-    return JSONResponse(content=merged_df.to_dict(orient="records"))
+    categorized = {}
+    for name, module in modules.items():
+        categorized[name] = []
+        for fn_name, fn in module.__dict__.items():
+            if callable(fn) and fn_name.startswith("_fetch"):
+                categorized[name].append({
+                    "name": fn_name.replace("_fetch_", ""),
+                    "description": inspect.getdoc(fn) or ""
+                })
+    return {"message": "GovData API", "available_datasets": categorized}
 
 
 @app.get("/cpi")
@@ -130,7 +50,7 @@ def get_cpi(
 ):
     """Consumer Price Index for All Urban Consumers (CPIAUCSL)."""
     try: 
-        df:pd.DataFrame = _fetch_cpi(start_date=start_date, end_date=end_date)
+        df:pd.DataFrame = inflation_and_prices._fetch_cpi(start_date=start_date, end_date=end_date)
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -144,7 +64,7 @@ def get_pce(
 ):
     """Consumer Price Index for All Urban Consumers (CPIAUCSL)."""
     try: 
-        df:pd.DataFrame = _fetch_pce(start_date=start_date, end_date=end_date) 
+        df:pd.DataFrame = inflation_and_prices._fetch_pce(start_date=start_date, end_date=end_date) 
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -158,7 +78,7 @@ def get_households(
 ):
     """Total Households (TTLHH)"""
     try: 
-        df:pd.DataFrame = _fetch_us_households(start_date=start_date, end_date=end_date)
+        df:pd.DataFrame = demographics._fetch_us_households(start_date=start_date, end_date=end_date)
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -172,7 +92,7 @@ def get_population(
 ):
     """Total Households (TTLHH)"""
     try: 
-        df:pd.DataFrame = _fetch_us_population(start_date=start_date, end_date=end_date)
+        df:pd.DataFrame = demographics._fetch_us_population(start_date=start_date, end_date=end_date)
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -188,7 +108,7 @@ def get_median_income(
     Median Annual Family Income in the United States (MEFAINUSA646N)
     """
     try: 
-        df:pd.DataFrame = _fetch_median_family_income(start_date=start_date, end_date=end_date)
+        df:pd.DataFrame = income_and_spending._fetch_median_family_income(start_date=start_date, end_date=end_date)
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -205,7 +125,7 @@ def get_30yr_mortgage_rates(
     30-Year Fixed Rate Mortgage Average in the United States (MORTGAGE30US)
     """
     try: 
-        df:pd.DataFrame = _fetch_30yr_mortgage_rates(start_date=start_date, end_date=end_date, freq=freq)
+        df:pd.DataFrame = rates._fetch_30yr_mortgage_rates(start_date=start_date, end_date=end_date, freq=freq)
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -222,7 +142,7 @@ def get_15yr_mortgage_rates(
     15-Year Fixed Rate Mortgage Average in the United States (MORTGAGE15US)
     """
     try: 
-        df:pd.DataFrame = _fetch_15yr_mortgage_rates(start_date=start_date, end_date=end_date, freq=freq)
+        df:pd.DataFrame = rates._fetch_15yr_mortgage_rates(start_date=start_date, end_date=end_date, freq=freq)
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -238,7 +158,7 @@ def get_rdpi(
     Real Disposable Personal Income (DSPI)
     """
     try: 
-        df:pd.DataFrame = _fetch_median_family_income(start_date=start_date, end_date=end_date)
+        df:pd.DataFrame = income_and_spending._fetch_median_family_income(start_date=start_date, end_date=end_date)
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -254,7 +174,7 @@ def get_mspus(
     Median Sales Price of Houses Sold for the United States (MSPUS)
     """
     try: 
-        df:pd.DataFrame = _fetch_median_home_prices(start_date=start_date, end_date=end_date)
+        df:pd.DataFrame = housing._fetch_median_home_prices(start_date=start_date, end_date=end_date)
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -270,7 +190,7 @@ def get_msp_new_homes(
     Median Sales Price for New Houses Sold in the United States (MSPNHSUS)
     """
     try: 
-        df:pd.DataFrame = _fetch_median_home_prices(start_date=start_date, end_date=end_date)
+        df:pd.DataFrame = housing._fetch_median_home_prices(start_date=start_date, end_date=end_date)
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -284,7 +204,7 @@ def get_caseshiller_homes_index(
 ):
     """S&P CoreLogic Case-Shiller U.S. National Home Price Index (CSUSHPINSA)"""
     try: 
-        df:pd.DataFrame = _fetch_caseshiller_home_price_index(start_date=start_date, end_date=end_date) 
+        df:pd.DataFrame = housing._fetch_caseshiller_home_price_index(start_date=start_date, end_date=end_date) 
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -298,7 +218,7 @@ def get_household_ops(
 ):
     """Expenditures: Household Operations: All Consumer Units (CXUHHOPERLB0101M)"""
     try: 
-        df:pd.DataFrame = _fetch_houshold_ops_spend(start_date=start_date, end_date=end_date) 
+        df:pd.DataFrame = income_and_spending._fetch_houshold_ops_spend(start_date=start_date, end_date=end_date) 
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -312,7 +232,7 @@ def get_used_car_prices(
 ):
     """CPI Used Cars and Trucks (CUSR0000SETA02). Prices calculated based on CPI index applied to reference year and price"""
     try: 
-        df:pd.DataFrame = _fetch_used_car_prices(start_date=start_date, end_date=end_date) 
+        df:pd.DataFrame = inflation_and_prices._fetch_used_car_prices(start_date=start_date, end_date=end_date) 
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -326,7 +246,7 @@ def get_new_car_prices(
 ):
     """CPI New Cars and Trucks (CUUR0000SETA01). Prices calculated based on CPI index applied to reference year and price"""
     try: 
-        df:pd.DataFrame = _fetch_new_car_prices(start_date=start_date, end_date=end_date) 
+        df:pd.DataFrame = inflation_and_prices._fetch_new_car_prices(start_date=start_date, end_date=end_date) 
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -340,7 +260,7 @@ def get_vehicle_ins_premiums(
 ):
     """Expenditures: Vehicle Insurance: All Consumer Units (CXU500110LB0101M)"""
     try: 
-        df:pd.DataFrame = _fetch_vehicle_ins_premiums(start_date=start_date, end_date=end_date) 
+        df:pd.DataFrame = income_and_spending._fetch_vehicle_ins_premiums(start_date=start_date, end_date=end_date) 
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -354,7 +274,7 @@ def get_pce_healthcare(
 ):
     """PCE Services: Healthcare (DHLCRC1Q027SBEA)."""
     try: 
-        df:pd.DataFrame = _fetch_pce_healthcare(start_date=start_date, end_date=end_date) 
+        df:pd.DataFrame = income_and_spending._fetch_pce_healthcare(start_date=start_date, end_date=end_date) 
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -369,7 +289,7 @@ def get_unrate(
 ):
     """Unemployment Rate (UNRATE)"""
     try: 
-        df:pd.DataFrame = _fetch_unrate(start_date=start_date, end_date=end_date, freq=freq)   
+        df:pd.DataFrame = wages_and_employment._fetch_unrate(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -384,7 +304,7 @@ def get_m2_supply(
 ):
     """M2 (WM2NS)"""
     try: 
-        df:pd.DataFrame = _fetch_m2_supply(start_date=start_date, end_date=end_date, freq=freq)   
+        df:pd.DataFrame = money_aggregates._fetch_m2_supply(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -399,7 +319,7 @@ def get_m2_velocity(
 ):
     """Velocity of M2 Money Stock (M2V)"""
     try: 
-        df:pd.DataFrame = _fetch_m2_velocity(start_date=start_date, end_date=end_date, freq=freq)   
+        df:pd.DataFrame = money_aggregates._fetch_m2_velocity(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -414,7 +334,7 @@ def get_gdp(
 ):
     """Gross Domestic Product (GDP)"""
     try: 
-        df:pd.DataFrame = _fetch_gdp(start_date=start_date, end_date=end_date, freq=freq)   
+        df:pd.DataFrame = output_and_growth._fetch_gdp(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -429,7 +349,7 @@ def get_sofr(
 ):
     """Secured Overnight Financing Rate (SOFR)"""
     try: 
-        df:pd.DataFrame = _fetch_sofr(start_date=start_date, end_date=end_date, freq=freq)   
+        df:pd.DataFrame = rates._fetch_sofr(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -444,7 +364,7 @@ def get_us_birthrate(
 ):
     """Crude Birth Rate for the United States (SPDYNCBRTINUSA)"""
     try: 
-        df:pd.DataFrame = _fetch_us_birthrate(start_date=start_date, end_date=end_date, freq=freq)   
+        df:pd.DataFrame = demographics._fetch_us_birthrate(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -460,7 +380,7 @@ def get_home_affordability(
     Merged Report exploring prices and premiums of buying a home over the years.
     """
     try: 
-        df:pd.DataFrame = _build_home_affordability(start_year=start_year, end_year=end_year)   
+        df:pd.DataFrame = income_and_spending._fetch_build_home_affordability(start_year=start_year, end_year=end_year)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -475,7 +395,7 @@ def get_unemployed(
 ):
     """Unemployment Level (UNEMPLOY) as count of Unemployed"""
     try: 
-        df:pd.DataFrame = _fetch_unemployment_level(start_date=start_date, end_date=end_date, freq=freq)   
+        df:pd.DataFrame = wages_and_employment._fetch_unemployment_level(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -490,7 +410,7 @@ def get_job_openings(
 ):
     """Job Openings: Total Nonfarm (JTSJOL)"""
     try: 
-        df:pd.DataFrame = _fetch_job_openings(start_date=start_date, end_date=end_date, freq=freq)   
+        df:pd.DataFrame = wages_and_employment._fetch_job_openings(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -505,7 +425,7 @@ def get_fed_funds_rate(
 ):
     """Federal Funds Effective Rate (FEDFUNDS)"""
     try: 
-        df:pd.DataFrame = _fetch_fed_funds_rate(start_date=start_date, end_date=end_date, freq=freq)   
+        df:pd.DataFrame = rates._fetch_fed_funds_rate(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -521,7 +441,7 @@ def get_new_homes_ns(
 ):
     """New Houses for Sale by Stage of Construction, Not Started (NHFSEPNTS)"""
     try: 
-        df:pd.DataFrame = _fetch_new_homes_ns(start_date=start_date, end_date=end_date, freq=freq)   
+        df:pd.DataFrame = housing._fetch_new_homes_ns(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -536,7 +456,7 @@ def get_new_homes_uc(
 ):
     """New Houses for Sale (Units) by Stage of Construction, Under Construction (NHFSEPUCS)"""
     try: 
-        df:pd.DataFrame = _fetch_new_homes_uc(start_date=start_date, end_date=end_date, freq=freq)   
+        df:pd.DataFrame = housing._fetch_new_homes_uc(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -551,7 +471,22 @@ def get_new_homes_comp(
 ):
     """New Houses for Sale (Units) by Stage of Construction, Under Construction (NHFSEPUCS)"""
     try: 
-        df:pd.DataFrame = _fetch_new_homes_comp(start_date=start_date, end_date=end_date, freq=freq)   
+        df:pd.DataFrame = housing._fetch_new_homes_comp(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/new-sf-homes-for-sale")
+def get_new_sf_homes_for_sale(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('M', description="Frequency period")
+):
+    """New One Family Houses for Sale in the United States (HNFSUSNSA)"""
+    try: 
+        df:pd.DataFrame = housing._fetch_new_sf_homes_for_sale(start_date=start_date, end_date=end_date, freq=freq)   
 
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
@@ -566,7 +501,7 @@ def get_birth_death_data(
 ):
     """Births and Deaths by Race/Ethnicity (CDC)"""
     try:
-        df: pd.DataFrame = _fetch_birth_death_data(start_year=start_year, end_year=end_year, race=race)
+        df: pd.DataFrame = demographics._fetch_birth_death_data(start_year=start_year, end_year=end_year, race=race)
         return JSONResponse(content=df.to_dict(orient="records"))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
