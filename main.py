@@ -12,6 +12,8 @@ import categories.money_aggregates as money_aggregates
 import categories.output_and_growth as output_and_growth
 import categories.rates as rates
 import categories.wages_and_employment as wages_and_employment
+import categories.delinquency as dq
+import categories.commodities as commodities
 
 
 modules = {
@@ -23,6 +25,8 @@ modules = {
     "Output and Growth": output_and_growth,
     "Rates": rates,
     "Wages and Employment": wages_and_employment,
+    "Delinquencies": dq,
+    "Commodities": commodities,
 }
 
 
@@ -503,5 +507,200 @@ def get_birth_death_data(
     try:
         df: pd.DataFrame = demographics._fetch_birth_death_data(start_year=start_year, end_year=end_year, race=race)
         return JSONResponse(content=df.to_dict(orient="records"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/dq-credit-cards")
+def get_dq_credit_cards(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('Q', description="Frequency period")
+):
+    """Delinquency Rate on Credit Card Loans, All Commercial Banks (DRCCLACBS)"""
+    try: 
+        df:pd.DataFrame = dq._fetch_dq_credit_cards(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.get("/dq-consumer-loans")
+def get_dq_consumer_loans(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('Q', description="Frequency period")
+):
+    """Delinquency Rate on Consumer Loans, All Commercial Banks (DRCLACBS)"""
+    try: 
+        df:pd.DataFrame = dq._fetch_dq_consumer_loans(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/dq-sfr-mtg")
+def get_dq_sfr_mortgages(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('Q', description="Frequency period")
+):
+    """Delinquency Rate on Single-Family Residential Mortgages, Booked in Domestic Offices, All Commercial Banks (DRSFRMACBS)"""
+    try: 
+        df:pd.DataFrame = dq._fetch_dq_sfr_mortgages(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/dq-all-loans")
+def get_dq_all_loans(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('Q', description="Frequency period")
+):
+    """Delinquency Rate on All Loans, All Commercial Banks (DRALACBS)"""
+    try: 
+        df:pd.DataFrame = dq._fetch_dq_all_loans(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/egg-prices")
+def get_egg_prices(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('M', description="Frequency period")
+):
+    """Average Price: Eggs, Grade A, Large (Cost per Dozen) in U.S. City Average (APU0000708111)"""
+    try: 
+        df:pd.DataFrame = commodities._fetch_egg_prices(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/milk-prices")
+def get_milk_prices(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('M', description="Frequency period")
+):
+    """Average Price: Milk, Fresh, Whole, Fortified (Cost per Gallon/3.8 Liters) in U.S. City Average (APU0000709112)"""
+    try: 
+        df:pd.DataFrame = commodities._fetch_milk_prices(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/ground-beef-prices")
+def get_ground_beef_prices(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('M', description="Frequency period")
+):
+    """Average Price: Ground Beef, 100% Beef (Cost per Pound/453.6 Grams) in U.S. City Average (APU0000703112)"""
+    try: 
+        df:pd.DataFrame = commodities._fetch_ground_beef_prices(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/bread-prices")
+def get_bread_prices(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('M', description="Frequency period")
+):
+    """Average Price: Bread, White, Pan (Cost per Pound/453.6 Grams) in U.S. City Average (APU0000702111)"""
+    try: 
+        df:pd.DataFrame = commodities._fetch_bread_prices(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/chicken-prices")
+def get_chicken_prices(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('M', description="Frequency period")
+):
+    """Average Price: Chicken Breast, Boneless (Cost per Pound/453.6 Grams) in U.S. City Average (APU0000FF1101)"""
+    try: 
+        df:pd.DataFrame = commodities._fetch_chicken_prices(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.get("/gas-prices")
+def get_gas_prices(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('M', description="Frequency period")
+):
+    """Average Price: Gasoline, Unleaded Regular (Cost per Gallon/3.785 Liters) in U.S. City Average (APU000074714)"""
+    try: 
+        df:pd.DataFrame = commodities._fetch_gas_prices(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/electric-kwh-prices")
+def get_electric_kwh_prices(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('M', description="Frequency period")
+):
+    """Average Price: Electricity per Kilowatt-Hour in U.S. City Average (APU000072610)"""
+    try: 
+        df:pd.DataFrame = commodities._fetch_electric_prices(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/coffee-prices")
+def get_coffee_prices(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('M', description="Frequency period")
+):
+    """Average Price: Coffee, 100%, Ground Roast, All Sizes (Cost per Pound/453.6 Grams) in U.S. City Average (APU0000717311)"""
+    try: 
+        df:pd.DataFrame = commodities._fetch_coffee_prices(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.get("/bacon-prices")
+def get_bacon_prices(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('M', description="Frequency period")
+):
+    """Average Price: Bacon, Sliced (Cost per Pound/453.6 Grams) in U.S. City Average (APU0000704111)"""
+    try: 
+        df:pd.DataFrame = commodities._fetch_bacon_sliced_prices(start_date=start_date, end_date=end_date, freq=freq)   
+
+        return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
