@@ -212,7 +212,7 @@ def _fetch_coffee_prices(start_date:str=None, end_date:str=None, freq:str=None):
 
 def _fetch_bacon_sliced_prices(start_date:str=None, end_date:str=None, freq:str=None):
     """
-    Average Price: Bacon, Sliced (Cost per Pound/453.6 Grams) in U.S. City Average (APU0000704111) | path: /coffee-prices | freq default: M | freqs available: Q
+    Average Price: Bacon, Sliced (Cost per Pound/453.6 Grams) in U.S. City Average (APU0000704111) | path: /bacon-prices | freq default: M | freqs available: Q
     """
     series = fred.get_series('APU0000704111')
     df = series.to_frame().reset_index()
