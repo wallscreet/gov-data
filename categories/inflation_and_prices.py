@@ -4,7 +4,7 @@ from fredapi import Fred
 from dotenv import load_dotenv
 import os
 import json
-from utils import merge_on_date
+from utils import merge_on_date, scale_for_inflation, add_real_prices, merge_on_year, calc_mtg_pi_payment
 import numpy as np
 
 load_dotenv()
