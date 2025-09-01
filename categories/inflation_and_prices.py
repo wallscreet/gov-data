@@ -28,9 +28,9 @@ def _fetch_cpi(start_date:str=None, end_date:str=None):
         df = df[df['Date'] <= end_date]
     
     df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
-    df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
-    df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
-    df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
+    # df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
+    # df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
+    # df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
 
     return df
 
@@ -49,9 +49,9 @@ def _fetch_pce(start_date=None, end_date=None):
         df = df[df['Date'] <= end_date]
 
     df["Date"] = df["Date"].dt.strftime("%Y-%m-%d")
-    df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
-    df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
-    df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
+    # df["Year"] = df["Date"].apply(lambda x: int(x[:4]))
+    # df["Month"] = df["Date"].apply(lambda x: int(x[5:7]))
+    # df["Day"] = df["Date"].apply(lambda x: int(x[8:]))
 
     df['PCE'] = df['PCE'] * 1000000000
 

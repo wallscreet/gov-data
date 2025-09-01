@@ -704,3 +704,18 @@ def get_bacon_prices(
         return JSONResponse(content=sanitize_for_json(df))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/all-commodity-prices")
+def get_bacon_prices(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('M', description="Frequency period")
+):
+    """Aggregated Dataset with Average Price:  All Commodities available in API"""
+    try: 
+        df:pd.DataFrame = commodities._fetch_all_commodity_prices(start_date=start_date, end_date=end_date)   
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
