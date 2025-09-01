@@ -1,9 +1,7 @@
-# from http.client import HTTPException
 import pandas as pd
 from fredapi import Fred
 from dotenv import load_dotenv
 import os
-# import json
 from utils import merge_on_year, scale_for_inflation, calc_mtg_pi_payment
 import numpy as np
 

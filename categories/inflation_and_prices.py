@@ -1,11 +1,7 @@
-# from http.client import HTTPException
-# import pandas as pd
 from fredapi import Fred
 from dotenv import load_dotenv
 import os
-# import json
 from utils import merge_on_date
-# import numpy as np
 
 load_dotenv()
 
