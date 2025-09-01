@@ -257,6 +257,20 @@ def get_new_car_prices(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/all-car-prices")
+def get_all_car_prices(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+):
+    """Merged dataset with New Car CPI (CUUR0000SETA01) and Used Car CPI (CUSR0000SETA02). Prices calculated based on CPI indices for New and Used autos applied to reference years and prices"""
+    try: 
+        df:pd.DataFrame = inflation_and_prices._fetch_all_car_prices(start_date=start_date, end_date=end_date)
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/vehicle-insurance")
 def get_vehicle_ins_premiums(
     start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
