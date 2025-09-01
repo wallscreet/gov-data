@@ -2,7 +2,7 @@ import pandas as pd
 from fredapi import Fred
 from dotenv import load_dotenv
 import os
-import numpy as np
+# import numpy as np
 import categories.inflation_and_prices as ip
 from functools import reduce
 

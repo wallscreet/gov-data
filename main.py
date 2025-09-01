@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 import pandas as pd
-from functools import reduce
+# from functools import reduce
 from utils import sanitize_for_json
 import inspect
 import categories.demographics as demographics
