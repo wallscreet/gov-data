@@ -60,6 +60,19 @@ def get_cpi(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/scale-for-inflation")
+def scale_for_inflation_route(
+    from_year: int = Query(1980, description="Year to scale from"),
+    to_year: int = Query(2025, description="Year to scale to"),
+    amount: float = Query(100.0, description="Amount to scale")
+):
+    """
+    Scale a monetary amount from `from_year` to `to_year` using CPI data.
+    """
+    scaled_value = inflation_and_prices._fetch_scaled_with_cpi(from_year=from_year, to_year=to_year, amount=amount)
+    return {"from_year": from_year, "to_year": to_year, "original_amount": amount, "scaled_amount": scaled_value}
+
+
 @app.get("/pce")
 def get_pce(
     start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
