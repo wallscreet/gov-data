@@ -1,6 +1,7 @@
 import pandas as pd
 from functools import reduce
 import numpy as np
+import matplotlib as plt
 
 
 def scale_for_inflation(cpi_df: pd.DataFrame, from_year: int, to_year: int, amount: float):
@@ -72,3 +73,5 @@ def add_real_prices(df):
         df[f"{col} (Real)"] = round((df[col] * (latest_cpi / df["CPI"])),2)
     
     return df
+
+

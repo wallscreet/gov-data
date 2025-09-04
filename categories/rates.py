@@ -30,9 +30,9 @@ def _fetch_30yr_mortgage_rates(start_date=None, end_date=None, freq:str=None):
     df['30yr Mortgage Rate'] = round(df['30yr Mortgage Rate'], 3)
 
     df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
-    df['Year'] = df['Date'].apply(lambda x: int(x[:4]))
-    df['Month'] = df['Date'].apply(lambda x: int(x[5:7]))
-    df['Day'] = df['Date'].apply(lambda x: int(x[8:]))
+    # df['Year'] = df['Date'].apply(lambda x: int(x[:4]))
+    # df['Month'] = df['Date'].apply(lambda x: int(x[5:7]))
+    # df['Day'] = df['Date'].apply(lambda x: int(x[8:]))
 
     return df
 
@@ -58,9 +58,9 @@ def _fetch_15yr_mortgage_rates(start_date=None, end_date=None, freq:str=None):
     df['15yr Mortgage Rate'] = round(df['15yr Mortgage Rate'], 3)
 
     df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
-    df['Year'] = df['Date'].apply(lambda x: int(x[:4]))
-    df['Month'] = df['Date'].apply(lambda x: int(x[5:7]))
-    df['Day'] = df['Date'].apply(lambda x: int(x[8:]))
+    # df['Year'] = df['Date'].apply(lambda x: int(x[:4]))
+    # df['Month'] = df['Date'].apply(lambda x: int(x[5:7]))
+    # df['Day'] = df['Date'].apply(lambda x: int(x[8:]))
 
     return df
 

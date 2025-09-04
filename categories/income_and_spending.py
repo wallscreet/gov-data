@@ -136,24 +136,24 @@ def _fetch_build_home_affordability(start_year:int=None, end_year:int=None):
 
     #Estimate HOI premiums based on reference year adjusted by PPI
     hoi_ref_cpi = hoi_df.loc[hoi_df['Year'] == hoi_ref_year, 'HOI PPI'].values[0]
-    hoi_df['Est HOI Premium'] = round((hoi_df['HOI PPI'] * (hoi_ref_premium / hoi_ref_cpi)), 2)
+    hoi_df['HOI Premium Real'] = round((hoi_df['HOI PPI'] * (hoi_ref_premium / hoi_ref_cpi)), 2)
 
     #Merge the datasets
     merged_hoi_df = merge_on_year([hoi_df, cpi_df], how='outer')
 
     # anchor year where both PPI + Premium exist
     anchor_year = 1998
-    premium_anchor = merged_hoi_df.loc[merged_hoi_df["Year"] == anchor_year, "Est HOI Premium"].values[0]
+    premium_anchor = merged_hoi_df.loc[merged_hoi_df["Year"] == anchor_year, "HOI Premium Real"].values[0]
     cpi_anchor = merged_hoi_df.loc[merged_hoi_df["Year"] == anchor_year, "CPI"].values[0]
 
     # fill missing premiums before PPI begins
     mask = merged_hoi_df["Year"] < anchor_year
-    merged_hoi_df.loc[mask, "Est HOI Premium"] = (
+    merged_hoi_df.loc[mask, "HOI Premium Real"] = (
         premium_anchor * (merged_hoi_df.loc[mask, "CPI"] / cpi_anchor)
     )
     merged_hoi_df.loc[mask, "HOI PPI"] = np.nan
     # Add scaled premiums using CPI
-    merged_hoi_df['Scaled Premium'] = merged_hoi_df.apply(lambda row: scale_for_inflation(cpi_df, 2024, row['Year'], row['Est HOI Premium']), axis=1)
+    merged_hoi_df['HOI Premium Nominal'] = merged_hoi_df.apply(lambda row: scale_for_inflation(cpi_df, 2024, row['Year'], row['HOI Premium Real']), axis=1)
 
     #Median Home Prices DF - resampled to annual as mean
     median_home_prices = fred.get_series('MSPUS')
@@ -193,8 +193,8 @@ def _fetch_build_home_affordability(start_year:int=None, end_year:int=None):
     cdf['Avg Loan Amount'] = cdf['Median Sales Price'] * .8
     cdf['Mtg PI Monthly'] = cdf.apply(lambda row: calc_mtg_pi_payment(row['Avg Loan Amount'], row['30yr Mtg Rate']), axis=1).round(2)
     cdf['Mtg PI Annual'] = round(cdf['Mtg PI Monthly'] * 12, 2)
-    cdf['Mtg PII Annual'] = round(cdf['Mtg PI Annual'] + cdf['Scaled Premium'], 2)
-    cdf['Mtg PII Monthly'] = round((cdf['Mtg PI Annual'] / 12) + (cdf['Scaled Premium'] / 12), 2)
+    cdf['Mtg PII Annual'] = round(cdf['Mtg PI Annual'] + cdf['HOI Premium Nominal'], 2)
+    cdf['Mtg PII Monthly'] = round((cdf['Mtg PI Annual'] / 12) + (cdf['HOI Premium Nominal'] / 12), 2)
     cdf['Mtg Ratio'] = round(cdf['Mtg PII Annual'] / cdf['Median Family Income'], 3)
 
     #Filter by year(s)

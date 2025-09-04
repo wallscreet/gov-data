@@ -733,7 +733,7 @@ def get_bacon_prices(
 
 
 @app.get("/all-commodity-prices")
-def get_bacon_prices(
+def get_all_commodity_prices(
     start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
     end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
     freq:str = Query('M', description="Frequency period")
