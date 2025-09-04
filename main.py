@@ -165,6 +165,23 @@ def get_15yr_mortgage_rates(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/mortgage-all")
+def get_all_mortgage_rates(
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
+    freq:str = Query('A', description="Frequency period")
+):
+    """
+    Fetch both 30-year and 15-year mortgage rates and merge them into a single DataFrame.
+    """
+    try: 
+        df:pd.DataFrame = rates._fetch_all_mortgage_rates(start_date=start_date, end_date=end_date, freq=freq)
+
+        return JSONResponse(content=sanitize_for_json(df))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/rdpi")
 def get_rdpi(
     start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),

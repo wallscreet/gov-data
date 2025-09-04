@@ -65,6 +65,20 @@ def _fetch_15yr_mortgage_rates(start_date=None, end_date=None, freq:str=None):
     return df
 
 
+def _fetch_all_mortgage_rates(start_date=None, end_date=None, freq:str=None):
+    """
+    Fetch both 30-year and 15-year mortgage rates and merge them into a single DataFrame.
+    """
+    df_30yr = _fetch_30yr_mortgage_rates(start_date, end_date, freq)
+    df_15yr = _fetch_15yr_mortgage_rates(start_date, end_date, freq)
+    
+    df_merged = df_30yr.merge(df_15yr, on='Date', how='outer')
+    
+    df_merged = df_merged.sort_values(by='Date').reset_index(drop=True)
+    
+    return df_merged
+
+
 def _fetch_sofr(start_date:str=None, end_date:str=None, freq:str=None):
     """
     Secured Overnight Financing Rate (SOFR)
